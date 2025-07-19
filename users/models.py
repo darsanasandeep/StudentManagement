@@ -1,6 +1,3 @@
-
-
-from MySQLdb.constants.FLAG import UNIQUE
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
@@ -20,6 +17,9 @@ class Course(models.Model):
 class Subject(models.Model):
     course = models.ForeignKey(Course,on_delete=models.CASCADE)
     subject = models.CharField(max_length=50)
+
+class ExamType(models.Model):
+    exam = models.CharField(max_length=50)
 
 class Teacher(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE,default=timezone.now)
@@ -41,19 +41,24 @@ class Student(models.Model):
 class Attendance(models.Model):
     date = models.DateField()
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    created_by = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject,on_delete=models.CASCADE)
+    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
 
 class AttendanceRecord(models.Model):
     attendance = models.ForeignKey(Attendance, related_name="records", on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     status = models.CharField(max_length=10, choices=(("Present", "Present"), ("Absent", "Absent")))
 
-class Grade(models.Model):
-    student = models.ForeignKey(User, on_delete=models.CASCADE)
-    exam_type = models.CharField(max_length=50)
+class Marks(models.Model):
+    exam_type = models.ForeignKey(ExamType, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course,on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject,on_delete=models.CASCADE)
+    max_mark = models.IntegerField()
+
+class MarkRecord(models.Model):
+    record = models.ForeignKey(Marks,on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
     mark = models.IntegerField()
-
-
+    grade = models.CharField(max_length=40,null=True)
 
 

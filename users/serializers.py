@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import User, Course, Subject, Teacher, Student
+from .models import User, Course, Subject, Teacher, Student, Attendance, AttendanceRecord, ExamType, MarkRecord, \
+    Marks
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -62,15 +63,90 @@ class StudentSerializer(serializers.ModelSerializer):
         model = Student
         fields = ['id', 'user','user_details','first_name', 'last_name', 'phone', 'address','course','course_details']
 
-class ProfileSerializer(serializers.Serializer):
-    role = serializers.CharField()
-    data = serializers.SerializerMethodField()
 
-    def get_data(self,obj):
-        if obj['role'] == 'teacher':
-            teacher = Teacher.objects.get(user=obj['user'])
-            return TeacherSerializer(teacher).data
-        elif obj['role'] == 'student':
-            student = Student.objects.get(user=obj['user'])
-            return StudentSerializer(student).data
-        return None
+class AttendanceSerializer(serializers.ModelSerializer):
+    teacher = serializers.PrimaryKeyRelatedField(
+        queryset=Teacher.objects.all(), write_only=True
+    )
+    teacher_details = TeacherSerializer(source='teacher', read_only=True)
+
+    course = serializers.PrimaryKeyRelatedField(
+        queryset=Course.objects.all(), write_only=True
+    )
+    course_details = CourseSerializer(source='course', read_only=True)
+
+    subject = serializers.PrimaryKeyRelatedField(
+        queryset=Subject.objects.all(), write_only=True
+    )
+    subject_details = SubjectSerializer(source='subject', read_only=True)
+
+    class Meta:
+        model = Attendance
+        fields = ['id','course','course_details','subject','subject_details','teacher','teacher_details','date']
+
+
+class AttendanceRecordSerializer(serializers.ModelSerializer):
+    student = serializers.PrimaryKeyRelatedField(
+        queryset=Student.objects.all(),write_only=True
+    )
+    student_details = StudentSerializer(source='student',read_only=True)
+    attendance = serializers.PrimaryKeyRelatedField(
+        queryset=Attendance.objects.all(),write_only=True
+    )
+    attendance_details = AttendanceSerializer(source='attendance',read_only=True)
+
+    class Meta:
+        model = AttendanceRecord
+        fields = ['id' ,'attendance','attendance_details','student','student_details','status']
+
+class ExamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExamType
+        fields = ['id','exam']
+
+class GradeSerializer(serializers.ModelSerializer):
+    subject = serializers.PrimaryKeyRelatedField(
+        queryset=Subject.objects.all(), write_only=True
+    )
+    subject_details = SubjectSerializer(source='subject', read_only=True)
+    exam_type = serializers.PrimaryKeyRelatedField(
+        queryset=ExamType.objects.all(), write_only=True
+    )
+    exam_details = ExamSerializer(source='exam_type', read_only=True)
+    course = serializers.PrimaryKeyRelatedField(
+        queryset=Course.objects.all(), write_only=True
+    )
+    course_details = CourseSerializer(source='course', read_only=True)
+
+    class Meta:
+        model = Marks
+        fields = ['id','subject','subject_details','exam_type','exam_details','max_mark','course','course_details']
+
+class GradeRecordSerializer(serializers.ModelSerializer):
+    student = serializers.PrimaryKeyRelatedField(
+        queryset=Student.objects.all(), write_only=True
+    )
+    student_details = StudentSerializer(source='student', read_only=True)
+    record = serializers.PrimaryKeyRelatedField(
+        queryset=Marks.objects.all(),write_only=True
+    )
+    record_details = GradeSerializer(source='record',read_only=True)
+
+    class Meta:
+        model = MarkRecord
+        fields = ['id','record','record_details','student','student_details','mark','grade']
+
+class AttendanceCalendarSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    status = serializers.CharField()
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+    con_password = serializers.CharField(required=True)
+
+    def validate(self, data):
+        if data['new_password'] != data['con_password']:
+            raise serializers.ValidationError("New passwords do not match.")
+        return data
+

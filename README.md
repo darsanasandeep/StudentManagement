@@ -1,5 +1,4 @@
 🎓 Student Management System
--------------------------------
 A full-stack web application for managing students, courses, exams, and grades. Built with Django (REST API) and React (frontend).Designed for schools or coaching centers to streamline administrative tasks.
 
 📌 Features
